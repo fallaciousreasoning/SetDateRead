@@ -24,6 +24,7 @@ namespace GoodreadsReadDates
 
             var userId = await client.Users.GetAuthenticatedUserId();
 
+            //TODO actually work with the pagination api
             var reviews = await client.Reviews.GetListByUser(userId.Value, shelfName: "read", pageSize: 1000);
 
             var undated = reviews.List.Where(r => !r.DateRead.HasValue).ToList();
