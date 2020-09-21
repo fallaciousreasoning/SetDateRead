@@ -15,11 +15,31 @@ namespace GoodreadsReadDates
             task.Wait();
         }
 
-        static async Task Run()
+        static async Task<IOAuthGoodreadsClient> GetAuthClient()
         {
             var config = Config.Load();
 
-            var client  = GoodreadsClient.CreateAuth(config.ApiKey, config.ApiSecret, config.AccessToken, config.AccessTokenSecret);
+            if (string.IsNullOrEmpty(config.AccessToken))
+            {
+
+                var client = GoodreadsClient.Create(config.ApiKey, config.ApiSecret);
+                var token = await client.AskCredentials("https://localhost:3000");
+
+                Console.WriteLine($"Please visit {token.AuthorizeUrl} and authorize the app. Press enter when complete");
+                Console.ReadLine();
+                var accessToken = await client.GetAccessToken(token);
+                config.AccessToken = accessToken.Token.ToString();
+                config.AccessTokenSecret = accessToken.Secret.ToString();
+
+                config.Save();
+            }
+
+            return GoodreadsClient.CreateAuth(config.ApiKey, config.ApiSecret, config.AccessToken, config.AccessTokenSecret);
+        }
+
+        static async Task Run()
+        {
+            var client = await GetAuthClient();
 
             var userId = await client.Users.GetAuthenticatedUserId();
 
@@ -53,7 +73,7 @@ namespace GoodreadsReadDates
             var shelves = await client.Shelves.GetListOfUserShelves(userId);
             var readShelf = shelves.List.First(shelf => shelf.Name == "read");
 
-            
+
 
             Console.ReadKey();
         }
